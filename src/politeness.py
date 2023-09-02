@@ -49,7 +49,7 @@ class PolitenessChecker:
         async with lock:
             if (can_fetch := await self._redis.get(robots_txt_url)) is not None:
                 logger.debug(f'{url} Found robots.txt in redis')
-                return can_fetch
+                return can_fetch == 1
             else:
                 logger.debug(f'{url} Fetching robots.txt')
                 async with self._session.get(url) as response:
@@ -62,7 +62,7 @@ class PolitenessChecker:
         self._rp.parse(text.splitlines())
         can_fetch = self._rp.can_fetch(USER_AGENT, url)
 
-        await self._redis.set(robots_txt_url, can_fetch, exat=int(time.time()) + REDIS_EXPIRE)
+        await self._redis.set(robots_txt_url, 1 if can_fetch else 0, exat=int(time.time()) + REDIS_EXPIRE)
 
         return can_fetch
 
