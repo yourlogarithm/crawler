@@ -35,7 +35,7 @@ async def startup_event():
 @app.on_event('shutdown')
 async def shutdown_event():
     await producer.inner.stop()
-    await PolitenessChecker(,.close()
+    await PolitenessChecker().close()
     await http_client.close()
     logger.info('Crawler stopped')
 
@@ -43,7 +43,7 @@ async def shutdown_event():
 @app.post('/crawl')
 async def crawl(url: str):
     logger.info(f'{url} | Crawling')
-    if not await PolitenessChecker(,.should_crawl(url):
+    if not await PolitenessChecker().should_crawl(url):
         logger.debug(f'{url} | Cannot crawl')
         return
     
