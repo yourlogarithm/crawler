@@ -14,8 +14,8 @@ from logger import Logger
 
 @singleton
 class PolitenessChecker:
-    def __init__(self, client: aiohttp.ClientSession, redis_client: aioredis.Redis):
-        self._client = client
+    def __init__(self, session: aiohttp.ClientSession, redis_client: aioredis.Redis):
+        self._session = session
         self._redis = redis_client
         self._rp = RobotFileParser()
         self._borrow_lock = asyncio.Lock()
@@ -47,29 +47,30 @@ class PolitenessChecker:
 
         lock = await self._borrow(robots_txt_url)
         async with lock:
-            if (from_redis := await self._redis.get(robots_txt_url)) is not None:
+            if (can_fetch := await self._redis.get(robots_txt_url)) is not None:
                 logger.debug(f'{url} Found robots.txt in redis')
-                text = from_redis.decode('utf-8')
+                return can_fetch
             else:
                 logger.debug(f'{url} Fetching robots.txt')
-                async with self._client.get(url) as response:
+                async with self._session.get(url) as response:
                     try:
                         text = await response.text()
                     except UnicodeDecodeError:
                         text = ''
         await self._return(robots_txt_url)
 
-        await self._redis.set(robots_txt_url, text, exat=int(time.time()) + REDIS_EXPIRE)
-
         self._rp.parse(text.splitlines())
+        can_fetch = self._rp.can_fetch(USER_AGENT, url)
 
-        return self._rp.can_fetch(USER_AGENT, url)
+        await self._redis.set(robots_txt_url, can_fetch, exat=int(time.time()) + REDIS_EXPIRE)
+
+        return can_fetch
 
     async def should_crawl(self, url: str):
         if not url.startswith('http'):
             return False
         try:
-            async with self._client.head(url) as response:
+            async with self._session.head(url) as response:
                 content_type = response.headers.get('Content-Type', '')
             return 'text/html' in content_type and await self.can_crawl(url)
         except Exception as e:
