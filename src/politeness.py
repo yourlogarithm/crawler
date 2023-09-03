@@ -40,17 +40,17 @@ class PolitenessChecker:
                 del self._locks[url]
                 del self._usage_count[url]
 
-    async def can_crawl(self, url: str, logger: Logger):
+    async def can_crawl(self, url: str, logger: Logger) -> bool:
         logger.debug(f'{url} | Checking politeness')
         robots_txt_url = self.get_robots_txt_url(url)
 
         lock = await self._borrow(robots_txt_url)
         async with lock:
             if (can_fetch := await self._redis.get(robots_txt_url)) is not None:
-                logger.debug(f'{url} Found robots.txt in redis')
-                return can_fetch == 1
+                logger.debug(f'{url} | Found robots.txt in redis by domain {robots_txt_url} - {can_fetch == 1}')
+                return can_fetch == '1'
             else:
-                logger.debug(f'{url} Fetching robots.txt')
+                logger.debug(f'{url} | Fetching robots.txt')
                 async with self._session.get(url) as response:
                     try:
                         text = await response.text()
@@ -66,12 +66,18 @@ class PolitenessChecker:
         return can_fetch
 
     async def should_crawl(self, url: str, logger: Logger):
-        if not url.startswith('http'):
-            return False
         try:
             async with self._session.head(url) as response:
                 content_type = response.headers.get('Content-Type', '')
-            return 'text/html' in content_type and await self.can_crawl(url)
+            content_type_passed = 'text/html' in content_type
+            if not content_type_passed:
+                logger.debug(f'{url} | Cannot crawl due to content type')
+                return False
+            robots_passed = await self.can_crawl(url, logger)
+            if not robots_passed:
+                logger.debug(f'{url} | Cannot crawl due to robots.txt')
+                return False
+            return True
         except Exception as e:
             logger.error(f"{url} | {e}")
             return False

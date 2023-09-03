@@ -21,14 +21,16 @@ app_settings = CrawlerSettings()
 http_client = aiohttp.ClientSession(headers={'User-Agent': USER_AGENT})
 producer = Producer(app_settings.kafka_uri)
 logger = Logger('crawler', app_settings.log_level)
+politeness_checker = None  # type: PolitenessChecker | None
 
 
 @app.on_event('startup')
 async def startup_event():
+    global politeness_checker
     await persistent_execution(producer.inner.start, tries=5, delay=5, backoff=5, logger_=logger)
     DBProvider(app_settings.mongo_uri)
     redis_client = await aioredis.from_url(app_settings.redis_uri)
-    PolitenessChecker(http_client, redis_client)
+    politeness_checker = PolitenessChecker(http_client, redis_client)
     logger.info('Crawler started')
 
 
@@ -43,8 +45,7 @@ async def shutdown_event():
 @app.post('/crawl')
 async def crawl(url: str):
     logger.info(f'{url} | Crawling')
-    if not await PolitenessChecker().should_crawl(url, logger):
-        logger.debug(f'{url} | Cannot crawl')
+    if not await politeness_checker.should_crawl(url, logger):
         return
     
     logger.debug(f'{url} Fetching')
@@ -63,7 +64,7 @@ async def crawl(url: str):
                 except UnicodeDecodeError:
                     continue
             else:
-                return
+                return logger.info(f'{url} | Could not decode text')
 
     logger.debug(f'{url} | Parsing')
     soup = BeautifulSoup(text, 'html.parser', parse_only=SoupStrainer(('a', 'title')))
@@ -74,7 +75,7 @@ async def crawl(url: str):
     links = set(urljoin(url, link).split('#')[0] for link in links if link is not None)
     logger.debug(f'{url} | Updating and sending to queue')
     links_list = list(links)
-    await DBProvider().update(url, title, text, now, logger)
+    await DBProvider().update(url, title, text, now)
     timestamp_ms = int(now.timestamp() * 1000)
     await producer.send_to_queue(RANKER_TOPIC, json.dumps([url, links_list]).encode('utf-8'), timestamp_ms)
     await producer.send_urls_batch(links_list, timestamp_ms)

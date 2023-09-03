@@ -31,4 +31,6 @@ class Producer:
                 batch = self._inner.create_batch()
                 partition_counter += 1
         partition = partitions[partition_counter % num_partitions]
+        print(f'sending batch to partition {partition}')
         await self._inner.send_batch(batch, URLS_TOPIC, partition=partition)
+        print('sent batch')

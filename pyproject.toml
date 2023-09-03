@@ -19,7 +19,6 @@ pymongo = "^4.5"
 aiokafka = "^0.8"
 pyngleton = "^0.0"
 redis = "^5.0"
-neo4j = "^5.12"
 common-utils = {git = "https://github.com/yourlogarithm/common-utils.git"}
 
 [tool.poetry.group.test.dependencies]
