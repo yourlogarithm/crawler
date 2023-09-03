@@ -5,16 +5,14 @@ from hashlib import sha512
 from motor.motor_asyncio import AsyncIOMotorClient
 from pymongo import ReturnDocument
 from pyngleton import singleton
-from tikv_client.asynchronous import RawClient
 
 from logger import Logger
 
 
 @singleton
 class DBProvider:
-    def __init__(self, mongo_uri: str, tikv_db: RawClient):
+    def __init__(self, mongo_uri: str):
         self._mongo_db = AsyncIOMotorClient(mongo_uri).search_engine
-        self._tikv_client = tikv_db
 
     @staticmethod
     def _shutdown_handler(_signum, _frame):
@@ -23,7 +21,6 @@ class DBProvider:
     async def update(self, url: str, title: str, content: str, timestamp: datetime):
         encoded = content.encode('utf-8')
         page_hash = sha512(encoded).digest()
-        await self._tikv_client.put(page_hash, encoded)
         before = await self._mongo_db.pages.find_one_and_update(
             {'url': url},
             {'$set': {'hash': page_hash, 'title': title, 'timestamp': timestamp}},

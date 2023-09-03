@@ -3,10 +3,10 @@ from datetime import datetime
 from urllib.parse import urljoin
 
 import aiohttp
-from bs4 import BeautifulSoup, SoupStrainer
+from bs4 import BeautifulSoup
+from bs4.element import SoupStrainer
 from fastapi import FastAPI
 from redis import asyncio as aioredis
-from tikv_client.asynchronous import RawClient
 
 from constants import USER_AGENT, ENCODINGS, RANKER_TOPIC
 from database import DBProvider
@@ -25,8 +25,7 @@ logger = Logger(app_settings.log_level)
 @app.on_event('startup')
 async def startup_event():
     await producer.inner.start()
-    tikv_db = await RawClient.connect([app_settings.tikv_uri])
-    DBProvider(app_settings.mongo_uri, tikv_db)
+    DBProvider(app_settings.mongo_uri)
     redis_client = await aioredis.from_url(app_settings.redis_uri)
     PolitenessChecker(http_client, redis_client)
     logger.info('Crawler started')

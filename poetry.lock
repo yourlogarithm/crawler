@@ -1130,18 +1130,6 @@ anyio = ">=3.4.0,<5"
 full = ["httpx (>=0.22.0)", "itsdangerous", "jinja2", "python-multipart", "pyyaml"]
 
 [[package]]
-name = "tikv-client"
-version = "0.0.3"
-description = "TiKV Client for Python"
-optional = false
-python-versions = ">=3.6"
-files = [
-    {file = "tikv_client-0.0.3-cp36-abi3-macosx_10_7_x86_64.whl", hash = "sha256:7ff02da155e56d63192ea2e06f9324638d4e952aa4e1e5778030cf4a014f3193"},
-    {file = "tikv_client-0.0.3-cp36-abi3-macosx_10_9_x86_64.macosx_11_0_arm64.macosx_10_9_universal2.whl", hash = "sha256:58233c14d664722939a29e6d536409f144f34322cf41b7f6bf0456ea4657f2b2"},
-    {file = "tikv_client-0.0.3-cp36-abi3-manylinux_2_12_x86_64.manylinux2010_x86_64.whl", hash = "sha256:446b5d13683a5ee0ca54d43c35c1c09557e89dedbaea58e620b0f7a989e7b30c"},
-]
-
-[[package]]
 name = "tomli"
 version = "2.0.1"
 description = "A lil' TOML parser"
@@ -1272,4 +1260,4 @@ multidict = ">=4.0"
 [metadata]
 lock-version = "2.0"
 python-versions = "^3.10"
-content-hash = "681276bc2a9aadfed548b086f18b6f4ec56180775f7d656d57642fd7d3a96902"
+content-hash = "3c19101882cb789239b1dc78fc29588a7dc2005e1a231ea9287e80d851b8ddbf"
