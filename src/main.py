@@ -13,7 +13,8 @@ from database import DBProvider
 from messaging import Producer
 from politeness import PolitenessChecker
 from settings import CrawlerSettings
-from logger import Logger
+from common_utils import persistent_execution
+from common_utils.logger import Logger
 
 app = FastAPI()
 app_settings = CrawlerSettings()
@@ -24,7 +25,7 @@ logger = Logger(app_settings.log_level)
 
 @app.on_event('startup')
 async def startup_event():
-    await producer.inner.start()
+    await persistent_execution(producer.inner.start, tries=5, delay=5, backoff=5, logger_=logger)
     DBProvider(app_settings.mongo_uri)
     redis_client = await aioredis.from_url(app_settings.redis_uri)
     PolitenessChecker(http_client, redis_client)
@@ -42,7 +43,7 @@ async def shutdown_event():
 @app.post('/crawl')
 async def crawl(url: str):
     logger.info(f'{url} | Crawling')
-    if not await PolitenessChecker().should_crawl(url):
+    if not await PolitenessChecker().should_crawl(url, logger):
         logger.debug(f'{url} | Cannot crawl')
         return
     
@@ -73,7 +74,7 @@ async def crawl(url: str):
     links = set(urljoin(url, link).split('#')[0] for link in links if link is not None)
     logger.debug(f'{url} | Updating and sending to queue')
     links_list = list(links)
-    await DBProvider().update(url, title, text, now)
+    await DBProvider().update(url, title, text, now, logger)
     timestamp_ms = int(now.timestamp() * 1000)
     await producer.send_to_queue(RANKER_TOPIC, json.dumps([url, links_list]).encode('utf-8'), timestamp_ms)
     await producer.send_urls_batch(links_list, timestamp_ms)

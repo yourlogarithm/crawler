@@ -1,6 +1,7 @@
 import asyncio
 import time
 from collections import defaultdict
+from logging import Logger
 from urllib.parse import urlparse
 from urllib.robotparser import RobotFileParser
 
@@ -9,7 +10,6 @@ from pyngleton import singleton
 from redis import asyncio as aioredis
 
 from constants import REDIS_EXPIRE, USER_AGENT
-from logger import Logger
 
 
 @singleton
@@ -40,8 +40,7 @@ class PolitenessChecker:
                 del self._locks[url]
                 del self._usage_count[url]
 
-    async def can_crawl(self, url: str):
-        logger = Logger()
+    async def can_crawl(self, url: str, logger: Logger):
         logger.debug(f'{url} | Checking politeness')
         robots_txt_url = self.get_robots_txt_url(url)
 
@@ -66,7 +65,7 @@ class PolitenessChecker:
 
         return can_fetch
 
-    async def should_crawl(self, url: str):
+    async def should_crawl(self, url: str, logger: Logger):
         if not url.startswith('http'):
             return False
         try:
@@ -74,7 +73,7 @@ class PolitenessChecker:
                 content_type = response.headers.get('Content-Type', '')
             return 'text/html' in content_type and await self.can_crawl(url)
         except Exception as e:
-            Logger().error(f"{url} | {e}")
+            logger.error(f"{url} | {e}")
             return False
 
     async def close(self):
