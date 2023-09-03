@@ -1,3 +1,5 @@
+from logging import Logger
+
 from aiokafka import AIOKafkaProducer
 from pyngleton import singleton
 
@@ -16,7 +18,7 @@ class Producer:
     async def send_to_queue(self, topic: str, message: bytes, timestamp_ms: int):
         await self._inner.send_and_wait(topic, message, timestamp_ms=timestamp_ms)
 
-    async def send_urls_batch(self, urls: list[str], timestamp_ms: int):
+    async def send_urls_batch(self, urls: list[str], timestamp_ms: int, logger: Logger):
         partitions = tuple(await self._inner.partitions_for(URLS_TOPIC))
         num_partitions = len(partitions)
         partition_counter = 0
@@ -31,6 +33,6 @@ class Producer:
                 batch = self._inner.create_batch()
                 partition_counter += 1
         partition = partitions[partition_counter % num_partitions]
-        print(f'sending batch to partition {partition}')
+        logger.debug(f'Sending batch to partition {partition}')
         await self._inner.send_batch(batch, URLS_TOPIC, partition=partition)
-        print('sent batch')
+        logger.debug('Sent batch')

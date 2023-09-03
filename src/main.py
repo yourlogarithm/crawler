@@ -78,5 +78,5 @@ async def crawl(url: str):
     await DBProvider().update(url, title, text, now)
     timestamp_ms = int(now.timestamp() * 1000)
     await producer.send_to_queue(RANKER_TOPIC, json.dumps([url, links_list]).encode('utf-8'), timestamp_ms)
-    await producer.send_urls_batch(links_list, timestamp_ms)
+    await producer.send_urls_batch(links_list, timestamp_ms, logger)
     logger.info(f'{url} | Done')

@@ -47,8 +47,8 @@ class PolitenessChecker:
         lock = await self._borrow(robots_txt_url)
         async with lock:
             if (can_fetch := await self._redis.get(robots_txt_url)) is not None:
-                logger.debug(f'{url} | Found robots.txt in redis by domain {robots_txt_url} - {can_fetch == 1}')
-                return can_fetch == '1'
+                logger.debug(f'{url} | Found robots.txt in redis by domain {robots_txt_url} - {can_fetch == b"1"}')
+                return can_fetch == b'1'
             else:
                 logger.debug(f'{url} | Fetching robots.txt')
                 async with self._session.get(url) as response:

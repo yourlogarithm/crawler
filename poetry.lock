@@ -372,7 +372,7 @@ retry-async = "^0.1.3"
 type = "git"
 url = "https://github.com/yourlogarithm/common-utils.git"
 reference = "HEAD"
-resolved_reference = "adbb72813272597afc16a711fbe00a1470d54006"
+resolved_reference = "0c2b857a32b719c56ab97e2bc207bf019fcd87dd"
 
 [[package]]
 name = "coverage"
