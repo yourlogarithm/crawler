@@ -20,7 +20,7 @@ app = FastAPI()
 app_settings = CrawlerSettings()
 http_client = aiohttp.ClientSession(headers={'User-Agent': USER_AGENT})
 producer = Producer(app_settings.kafka_uri)
-logger = Logger(app_settings.log_level)
+logger = Logger('crawler', app_settings.log_level)
 
 
 @app.on_event('startup')
